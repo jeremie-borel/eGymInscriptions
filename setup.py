@@ -21,7 +21,6 @@ setup(
     install_requires=[
         'lxml>=3.7.3',
         ],
-    include_package_data=True,
     zip_safe=False,                 # because we're including static files
     classifiers=[
         'Development Status :: 3 - Alpha',
