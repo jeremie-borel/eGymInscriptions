@@ -1,6 +1,6 @@
 # eGymInscriptions
 
-facultatif: 
+### facultatif: 
 
 virtualenv monprojet
 
@@ -8,8 +8,8 @@ cd monprojet
 
 source bin/activate
 
-
-pip install requests lxml 
+### obligatoire 
+pip install lxml 
 
 pip install git+https://github.com/jeremie-borel/PyFileMaker.git
 
