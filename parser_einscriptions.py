@@ -28,7 +28,8 @@ if __name__ == '__main__':
             log.warning(u"Django is not installed. Passwords will be required.")
 
 
-from pyfilemaker import FMServer
+from PyFileMaker import FMServer
+
 
 # from libs.constantes import *
 # from inscriptions.helper import *
