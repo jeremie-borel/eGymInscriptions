@@ -6,7 +6,8 @@ cd monprojet
 source bin/activate
 
 
-pip install requests lxml PyFileMaker==3.3
+pip install requests lxml 
+pip install git+https://github.com/jeremie-borel/PyFileMaker.git
 
 git clone https://github.com/jeremie-borel/eGymInscriptions
 

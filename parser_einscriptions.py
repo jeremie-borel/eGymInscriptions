@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 
+# tolerate any ssl certificate
+import requests
+import requests.packages.urllib3.exceptions as ulib
+requests.packages.urllib3.disable_warnings(ulib.InsecureRequestWarning)
+
+# generic import...
 import re, sys, os, json, copy, base64, ftplib 
+
+# parsing import 
 from lxml import etree, objectify
 from lxml.objectify import StringElement, IntElement, FloatElement
+
+# string file object
 from io import StringIO, BytesIO
 
 INSCRIPTION_URL = None
@@ -13,7 +23,6 @@ NORMA_PSWD = None
 # must correspond to the namespaces used in the xml.
 NS1 = '{http://evd.vd.ch/xmlns/eVD-0041/2}'
 NS2 = '{http://evd.vd.ch/xmlns/eVD-0039/2}'
-
 
 try:
     # tries to load a password file
@@ -69,7 +78,7 @@ if not NORMA_FTP or not NORMA_USER or not NORMA_PSWD or not INSCRIPTION_URL:
     NORMA_USER = 'joe'
     NORMA_PSWD = '123'
 
-    """ )
+    """
     sys.exit(1)
 
 
@@ -478,7 +487,7 @@ def main():
     print u"Total number of inscription (with photos: {}) in the xml: {}".format( photo, count )
     print u"Total number of uid found in Norma: {}".format( found )
     print u"Total number of record skipped in Norma: {}".format( skipped )
-    print u"Total number of record edited in Norma: {}".format( update  d )
+    print u"Total number of record edited in Norma: {}".format( updated )
         
 if __name__ == '__main__':
     main()
