@@ -1,8 +1,11 @@
 # eGymInscriptions
 
 facultatif: 
+
 virtualenv monprojet
+
 cd monprojet
+
 source bin/activate
 
 
