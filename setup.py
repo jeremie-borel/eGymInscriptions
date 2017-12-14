@@ -13,7 +13,7 @@ setup(
     author=u'blj',
     url='https://github.com/jeremie-borel/eGymInscriptions',
     license='GPL',
-    packages=find_packages('einscriptions'),
+    packages=['einscriptions'],
     include_package_data=True,
     install_requires=[
         'requests',
