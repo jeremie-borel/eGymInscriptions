@@ -53,8 +53,7 @@ from PyFileMaker import FMServer
 # from inscriptions.helper import *
 
 if not NORMA_FTP or not NORMA_USER or not NORMA_PSWD or not INSCRIPTION_URL:
-    log.exception( e )
-    log.critical( u"""
+    print u"""
     
     Les mots de passes pour accèder au fichier Inscription sont 
     introuvables. Vous devez manuellement renseigner les variables 
@@ -242,7 +241,7 @@ def etab_pronostic( item ):
     value = item['pronostic']
     if value in ('Admis', 'Incertain', 'Certain', 'Probable'):
         return value
-    log.warning( u"Pronostic inconnu: {} ({})".format( value, uid ) )
+    print u"Pronostic inconnu: {} ({})".format( value, uid )
     return ""
 
 def eleve_os( item ):
@@ -325,13 +324,9 @@ def eleve_autre_formation( item ):
 def main():
 
     import argparse
-    from libs.args import LogLevelAction
     
     parser = argparse.ArgumentParser(description='Exports eInscription into Inscription on Norma.')
     
-    parser.add_argument('-l', '--log-level', dest="log", default=None,
-                        action=LogLevelAction, help='Set log level' )
-
     parser.add_argument('-f', '--file', dest="file", default="", required=True,
                             help='XML File to parse' )
     parser.add_argument('-T', '--true', dest="simulate", action="store_false",
@@ -345,12 +340,12 @@ def main():
     args = parser.parse_args()
     
     
-    log.info( u"Loading XML file {}".format( args.file ) )
+    print u"Loading XML file {}".format( args.file )
 
     if args.simulate:
-        log.info( u"Simulation mode ON" )
+        print u"Simulation mode ON"
     else:
-        log.info( u"Simulation mode OFF" )
+        print u"Simulation mode OFF"
     
     fm = FMServer( url=INSCRIPTION_URL, debug=False )
     fm.setDb( 'Inscription' )
@@ -384,7 +379,7 @@ def main():
         
         ins = query['inscription']
         if not ins:
-            log.error( u"Pas d'inscirption pour {}".format( uid ))
+            print u"Pas d'inscirption pour {}".format( uid )
             continue
 
         image = query['donneesComplementaires']['photo']
@@ -392,10 +387,10 @@ def main():
         resultset = fm.doFind({'uid':uid})
 
         if not resultset:
-            log.error( u"uid {} not found in the FMS db".format(uid) )
+            print u"uid {} not found in the FMS db".format(uid)
             continue
         if len(resultset)>1:
-            log.error( u"More than one uid found for {} in the FMS db".format(uid) )
+            print u"More than one uid found for {} in the FMS db".format(uid)
             continue
 
         found += 1
@@ -439,7 +434,7 @@ def main():
             EC = bool( ecole == u'Ecole de commerce' )
 
             if not EM and not EC and not ECG:
-                log.error( u"L'élève {} n'est inscrit dans aucune école.".format(uid) )
+                print u"L'élève {} n'est inscrit dans aucune école.".format(uid)
                 continue
             
             if EM:
@@ -468,22 +463,22 @@ def main():
                 _setattr( res, 'eleveClasseSpeciale', eleve_speciale(ins) )
 
         except KeyError as e:
-            log.error( "Could not process {}".format( uid ) )
+            print u"Could not process {}".format( uid )
             raise
 
-        log.info( u"Edition de l'inscription de {}".format( uid ))
+        print u"Edition de l'inscription de {}".format( uid )
         res.flagInscriptionOK = 1
         res.flagEInscription = 1
         if args.simulate:
-            log.debug( u"Simulation mode on" )
+            print u"Simulation mode on"
         else:
             fm.doEdit( res )            
         updated += 1
 
-    log.info( u"Total number of inscription (with photos: {}) in the xml: {}".format( photo, count ) )
-    log.info( u"Total number of uid found in Norma: {}".format( found ) )
-    log.info( u"Total number of record skipped in Norma: {}".format( skipped ) )
-    log.info( u"Total number of record edited in Norma: {}".format( updated ) )
+    print u"Total number of inscription (with photos: {}) in the xml: {}".format( photo, count )
+    print u"Total number of uid found in Norma: {}".format( found )
+    print u"Total number of record skipped in Norma: {}".format( skipped )
+    print u"Total number of record edited in Norma: {}".format( update  d )
         
 if __name__ == '__main__':
     main()
