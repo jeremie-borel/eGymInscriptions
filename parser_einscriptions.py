@@ -1,40 +1,35 @@
 # -*- coding: utf-8 -*-
 
-import re, logging, uuid, os, urllib, sys, codecs, json, copy, base64, ftplib 
+import re, sys, os, json, copy, base64, ftplib 
 from lxml import etree, objectify
 from lxml.objectify import StringElement, IntElement, FloatElement
-
 from io import StringIO, BytesIO
-
-log = logging.getLogger( 'gyc.inscriptions.parser_einscriptions' )
-
 
 INSCRIPTION_URL = None
 NORMA_FTP = None
 NORMA_USER = None
 NORMA_PSWD = None
 
+# must correspond to the namespaces used in the xml.
+NS1 = '{http://evd.vd.ch/xmlns/eVD-0041/2}'
+NS2 = '{http://evd.vd.ch/xmlns/eVD-0039/2}'
 
-if __name__ == '__main__':
-    try:
-        # setting django env.
-        from django.core.wsgi import get_wsgi_application
-        _base =  os.path.abspath( os.path.dirname( __file__ ) )
-        sys.path = [os.path.abspath( os.path.join( _base, '../' ) )] + sys.path
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gyc.settings")
-        application = get_wsgi_application()
-    except ImportError:
-        if not INSCRIPTION_URL:
-            log.warning(u"Django is not installed. Passwords will be required.")
-
-
-from PyFileMaker import FMServer
-
-
-# from libs.constantes import *
-# from inscriptions.helper import *
 
 try:
+    # tries to load a password file
+    from pswd import *
+except ImportError:
+    pass
+
+try:
+    # tries to load password from django app...
+    # setting django env.
+    from django.core.wsgi import get_wsgi_application
+    _base =  os.path.abspath( os.path.dirname( __file__ ) )
+    sys.path = [os.path.abspath( os.path.join( _base, '../' ) )] + sys.path
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gyc.settings")
+    application = get_wsgi_application()
+
     import appsettings.settings as mysettings
     from libs.constantes import NORMA
     _norma = mysettings.get( group='serveur', gymnase = NORMA )
@@ -45,8 +40,17 @@ try:
     NORMA_FTP = _norma['ftphost']
     NORMA_USER = _norma['ftpuser']
     NORMA_PSWD = _norma['ftppass']
-except Exception as e:
+
+except ImportError:
     pass
+except Exception as e:
+    print unicode(e)
+
+from PyFileMaker import FMServer
+
+
+# from libs.constantes import *
+# from inscriptions.helper import *
 
 if not NORMA_FTP or not NORMA_USER or not NORMA_PSWD or not INSCRIPTION_URL:
     log.exception( e )
@@ -68,10 +72,6 @@ if not NORMA_FTP or not NORMA_USER or not NORMA_PSWD or not INSCRIPTION_URL:
 
     """ )
     sys.exit(1)
-
-# must correspond to the namespaces used in the xml.
-NS1 = '{http://evd.vd.ch/xmlns/eVD-0041/2}'
-NS2 = '{http://evd.vd.ch/xmlns/eVD-0039/2}'
 
 
 def node_to_obj( xml_element, map, ns=[ ] ):
