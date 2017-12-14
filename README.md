@@ -1,19 +1,20 @@
 # eGymInscriptions
 
 ### facultatif: 
-
+```
 virtualenv monprojet
-
 cd monprojet
-
 source bin/activate
-
-### obligatoire 
+```
+### obligatoire
+````
 pip install lxml 
-
 pip install git+https://github.com/jeremie-borel/PyFileMaker.git
-
 git clone https://github.com/jeremie-borel/eGymInscriptions
+```
 
+### déclencher le script:
+```
 cd eGymInscriptions
 python parser_einscriptions.py
+```
