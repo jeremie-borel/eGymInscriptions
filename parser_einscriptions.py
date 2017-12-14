@@ -8,6 +8,13 @@ from io import StringIO, BytesIO
 
 log = logging.getLogger( 'gyc.inscriptions.parser_einscriptions' )
 
+
+INSCRIPTION_URL = None
+NORMA_FTP = None
+NORMA_USER = None
+NORMA_PSWD = None
+
+
 if __name__ == '__main__':
     try:
         # setting django env.
@@ -16,17 +23,15 @@ if __name__ == '__main__':
         sys.path = [os.path.abspath( os.path.join( _base, '../' ) )] + sys.path
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gyc.settings")
         application = get_wsgi_application()
-    except ImportError("Django is not installed. Passwords will be required.")
+    except ImportError:
+        if not INSCRIPTION_URL:
+            log.warning(u"Django is not installed. Passwords will be required.")
+
 
 from pyfilemaker import FMServer
 
 # from libs.constantes import *
 # from inscriptions.helper import *
-
-INSCRIPTION_URL = None
-NORMA_FTP = None
-NORMA_USER = None
-NORMA_PSWD = None
 
 try:
     import appsettings.settings as mysettings
