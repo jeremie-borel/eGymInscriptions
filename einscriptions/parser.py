@@ -9,12 +9,14 @@ from io import StringIO, BytesIO
 log = logging.getLogger( 'gyc.inscriptions.parser_einscriptions' )
 
 if __name__ == '__main__':
-    # setting django env.
-    from django.core.wsgi import get_wsgi_application
-    _base =  os.path.abspath( os.path.dirname( __file__ ) )
-    sys.path = [os.path.abspath( os.path.join( _base, '../' ) )] + sys.path
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gyc.settings")
-    application = get_wsgi_application()
+    try:
+        # setting django env.
+        from django.core.wsgi import get_wsgi_application
+        _base =  os.path.abspath( os.path.dirname( __file__ ) )
+        sys.path = [os.path.abspath( os.path.join( _base, '../' ) )] + sys.path
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gyc.settings")
+        application = get_wsgi_application()
+    except ImportError("Django is not installed. Passwords will be required.")
 
 from pyfilemaker import FMServer
 

@@ -12,14 +12,13 @@ setup(
     long_description='',
     author=u'blj',
     url='https://github.com/jeremie-borel/eGymInscriptions',
-    # download_url='',
-    license=None,
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
+    license='GPL',
+    packages=find_packages('einscriptions'),
     include_package_data=True,
-    #packages=['minibus','appsettings','libs'],
     install_requires=[
+        'requests',
         'lxml>=3.7.3',
+        'PyFileMaker>=3.3',
         ],
     zip_safe=False,                 # because we're including static files
     classifiers=[
