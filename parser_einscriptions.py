@@ -20,10 +20,6 @@ NORMA_FTP = None
 NORMA_USER = None
 NORMA_PSWD = None
 
-POSTFINANCE_MAIL = None
-POSTFINANCE_SMTP = None
-POSTFINANCE_PSWD = None
-
 # must correspond to the namespaces used in the xml.
 NS1 = '{http://evd.vd.ch/xmlns/eVD-0041/2}'
 NS2 = '{http://evd.vd.ch/xmlns/eVD-0039/2}'
