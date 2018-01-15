@@ -32,7 +32,6 @@ except ImportError:
 
 from PyFileMaker import FMServer
 
-
 # from libs.constantes import *
 # from inscriptions.helper import *
 
