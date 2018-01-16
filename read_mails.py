@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys, os
+import sys, os, copy
 import logging, datetime, imaplib, email, email.header, re
 from collections import defaultdict
 
@@ -21,18 +21,20 @@ try:
 except ImportError:
     pass
 
-print INSCRIPTION_URL
-
 
 from PyFileMaker import FMServer
 fm = FMServer( url=INSCRIPTION_URL, debug=False )
 fm.setDb( 'Inscription' )
-# fm.setDb( 'InscriptionJeremie' )
 fm.setLayout( 'XmlPaiement' )
 
+ELECTRONIQUE = u'électronique'
 
 _pat = re.compile( 
     r"""
+    PAYID: \s+ (?P<key>\d+) 
+    
+    .*?
+     
     EINSGYM - (?P<cmd>[A-Z0-9-]*?) 
     -1- 
     (?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})
@@ -41,11 +43,11 @@ _pat = re.compile(
     \s+ / \s+ statut: \s+
 
     (?P<status>\d.*)$
-    """, re.VERBOSE )
+    """, re.VERBOSE|re.DOTALL )
 
 def read_email():
     print "Downloading emails..."
-    mail_data = defaultdict( list )
+    mail_data = {}
     try:
         mail = imaplib.IMAP4_SSL( host=POSTFINANCE_SERVER, port=993 )
         mail.login( POSTFINANCE_MAIL , POSTFINANCE_PSWD )
@@ -66,6 +68,9 @@ def read_email():
                 continue
 
             msg = email.message_from_string(data[0][1])
+            author = email.header.decode_header(msg['From'])
+            if 'noreply-postfinance@v-psp.com' not in author[0]:
+                continue
 
             subject = []
             for line,encoding in email.header.decode_header(msg['Subject']):
@@ -99,13 +104,27 @@ def read_email():
             if 'test' in status.lower():
                 continue
 
-            tpl = ( payment_date, status, subject)
-            mail_data[cmd_id].append( tpl )
+            key = 'e' + m.group('key')
+            if key in mail_data:
+                raise KeyError("Double key !!!")
+
+            tpl = {
+                'key':    key,
+                'cmd':    cmd_id,
+                'date':   payment_date,
+                'status': status, 
+                'raw':    subject,
+            }
+            mail_data[key] = tpl
             
         mail.close()
         mail.logout()
 
-        print "Mails matched: {}, unmatched: {}".format( matched, unmatched )
+        print "Mails matched: {}, unmatched: {}, matched and not test:{}".format(
+            matched,
+            unmatched,
+            len(mail_data),
+        )
         return mail_data
     except Exception, e:
         print unicode( e )
@@ -127,48 +146,91 @@ def get_status( data ):
 
 
 def download_paiements():
-    print "Downloading paiements..."
+    print "Downloading existing reccords from Inscription..."
 
-    resultset = fm.doFindAll()
+    resultset = fm.doFind(encode_obj({
+        'modePaiement':ELECTRONIQUE,
+    }))
 
-    ret = { r.numeroDemande:r for r in resultset }
+    ret = { r.paiementId:r for r in resultset }
     return ret
 
+def encode_obj( obj ):
+    """Encodes all unicode as utf8 strings"""
+    o = copy.copy( obj )
+    for k, v in o.iteritems():
+        if isinstance( v, unicode ):
+            o[k] = v.encode( 'utf8' )
+    return o
 
 def main():
     
     mail_data = read_email()
-
     actual = download_paiements()
-
-    for cmd, data in mail_data.items():
-        tmp = sorted( data, key=lambda x:x[0] )
-        date, status, raw = tmp[0]
-
+    count = 0
+    for key, data in mail_data.items():
+        fstatus = get_status( data['status'] )
+        cmd = data['cmd']
         obj = {
-            'numeroDemande': cmd.encode( 'utf8' ),
-            'modePaiement': u'électronique'.encode( 'utf8' ),
-            'resultatPaiement': status.encode( 'utf8' ),
-            'datePaiement': date,
-            'donneesBrutes': raw.encode( 'utf8' ),
-            'commentaire': "" if len(tmp)==0 else "mails multiples",
+            'paiementId': key,
+            'numeroDemande': cmd,
+            'modePaiement': ELECTRONIQUE,
+            'resultatPaiement': fstatus,
+            'datePaiement': data['date'],
+            'donneesBrutes': data['raw'],
+            #'commentaire': "" if len(tmp)==0 else "mails multiples",
         }
 
-        if cmd not in actual.keys():
-            print u"Creating payment for", cmd
-            fm.doNew( obj )
+        if key not in actual.keys():
+            print u"Creating payment for", cmd, key
+            fm.doNew( encode_obj(obj) )
             continue
 
-        r = actual[cmd]
+        r = actual[key]
         flag = False
-        for key,value in obj.items():
-            if getattr( r, key ) != value:
-                setattr( r, key, value )
+        for k,value in obj.items():
+            if getattr( r, k ) != value:
+                print getattr( r, k ), value, getattr( r, k ) == value
+                if isinstance( value, unicode ):
+                    v = value.encode( 'utf8' )
+                else:
+                    v = value
+                setattr( r, k, v )
                 flag = True
         if flag:
-            print u"Editing payment for", cmd
+            print u"Editing payment for", cmd, key
             fm.doEdit( r )
 
+        count += 1
+        if count > 30:
+            break
 
 if __name__ == '__main__':
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description='Reads the mails.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+        
+    parser.add_argument('--test', dest="test", action="store_true",
+                            default=False, required=False,
+                            help='Tests inscriptions on Norma.' )
+
+    args = parser.parse_args()
+
+    if args.test:
+        print "tagada"
+        fm.setLayout( 'StdInscription' )
+        # fm.doView()
+        print "oualalal"
+        # fm = FMServer( url=INSCRIPTION_URL, debug=False )
+        # fm.setDb( 'essaimneuf' )
+
+        # fm.setLayout( 'StdEleves' )
+
+        r = fm.doFind({'uid':'29cd84929987490c85b97f6567d49511'})
+        print r
+        sys.exit(0)
+
     main()
