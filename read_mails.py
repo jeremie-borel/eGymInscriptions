@@ -209,13 +209,22 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser(
-        description='Reads the mails.',
+        description=u"""Upload des informations de paiements *électroniques*
+        depuis les mails de confirmation Postfinance vers le fichier 
+        Inscription.
+
+        La procédure du script est la suivante:
+        charge tous les mails
+        - charge tous les paiements présents dans Inscriptions
+        - upload sur Inscription la différence des deux.
+        
+        """,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
         
     parser.add_argument('--test', dest="test", action="store_true",
                             default=False, required=False,
-                            help='Tests inscriptions on Norma.' )
+                            help='Tests de lecture sur Inscription.' )
 
     args = parser.parse_args()
 
