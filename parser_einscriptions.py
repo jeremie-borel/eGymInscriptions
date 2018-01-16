@@ -30,33 +30,7 @@ try:
 except ImportError:
     pass
 
-try:
-    # tries to load password from django app...
-    # setting django env.
-    from django.core.wsgi import get_wsgi_application
-    _base =  os.path.abspath( os.path.dirname( __file__ ) )
-    sys.path = [os.path.abspath( os.path.join( _base, '../' ) )] + sys.path
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gyc.settings")
-    application = get_wsgi_application()
-
-    import appsettings.settings as mysettings
-    from libs.constantes import NORMA
-    _norma = mysettings.get( group='serveur', gymnase = NORMA )
-    _url = "{protocol}://{user}:{password}@{ip}:{port}".format( **_norma )
-    INSCRIPTION_URL = _url
-
-    _norma = mysettings.get( group='inscription', gymnase = NORMA )
-    NORMA_FTP = _norma['ftphost']
-    NORMA_USER = _norma['ftpuser']
-    NORMA_PSWD = _norma['ftppass']
-
-except ImportError:
-    pass
-except Exception as e:
-    print unicode(e)
-
 from PyFileMaker import FMServer
-
 
 # from libs.constantes import *
 # from inscriptions.helper import *
@@ -334,7 +308,10 @@ def main():
 
     import argparse
     
-    parser = argparse.ArgumentParser(description='Exports eInscription into Inscription on Norma.')
+    parser = argparse.ArgumentParser(
+        description='Exports eInscription into Inscription on Norma.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     
     parser.add_argument('-f', '--file', dest="file", default="", required=True,
                             help='XML File to parse' )
