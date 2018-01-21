@@ -1,3 +1,4 @@
+#!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
 #test
@@ -320,12 +321,22 @@ def main():
                             default=True, required=False,
                             help='Simulation mode off. Does something on Inscription' )
 
+    parser.add_argument('-v', '--verbose', dest="verbose", action="store_true",
+                            default=False, required=False,
+                            help='Verbose mode on.' )
+
+    parser.add_argument('-F', '--filter', dest="filter", 
+                            nargs="*",
+                            default=[], required=False,
+                            help='Filter on those uids only.' )
+
     parser.add_argument('--force', dest="overwrite", action="store_true",
                             default=False, required=False,
                             help='Overwrites existing Inscription on Norma' )
 
     args = parser.parse_args()
     
+    print args.filter
     
     print u"Loading XML file {}".format( args.file )
 
@@ -356,20 +367,30 @@ def main():
     skipped = 0
     photo = 0
 
+    if args.verbose:
+        print "Setting FTP"
     ftp = ftplib.FTP( NORMA_FTP )
     ftp.login( NORMA_USER, NORMA_PSWD )
     
     for query in parse( args.file ):
         uid = query['eleve']['uid']
+    
+        if args.filter and uid.lower() not in args.filter:
+            continue
+
+        if args.verbose:
+            print "Parsing ", uid
         
         count += 1
         
         ins = query['inscription']
         if not ins:
-            print u"Pas d'inscirption pour {}".format( uid )
+            print u"Pas d'inscription pour {}".format( uid )
             continue
 
         image = query['donneesComplementaires']['photo']
+        if args.verbose:
+            print "Len of image is ", len(image)
 
         resultset = fm.doFind({'uid':uid})
 
@@ -387,7 +408,11 @@ def main():
             skipped += 1
             continue
 
-        if image and not args.simulate:
+        if image and ( len(args.filter) or not args.simulate ):
+            if len(args.filter):
+                tfile = open( '/tmp/'+uid.lower()+'.jpg', 'wb' )
+                tfile.write( base64.b64decode( image ) )
+                
             data = BytesIO( base64.b64decode( image ) )
             name = 'photos_lagapeo/' + uid.lower() + ".jpg"
             ftp.storbinary("STOR " + name, data, 1024*8 )
@@ -453,12 +478,12 @@ def main():
             print u"Could not process {}".format( uid )
             raise
 
-        print u"Edition de l'inscription de {}".format( uid )
         res.flagInscriptionOK = 1
         res.flagEInscription = 1
         if args.simulate:
-            print u"Simulation mode on"
+            print u"Simulation de l'inscription de {}".format( uid )
         else:
+            print u"Edition de l'inscription de {}".format( uid )
             fm.doEdit( res )            
         updated += 1
 
