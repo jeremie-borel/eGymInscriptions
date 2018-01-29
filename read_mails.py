@@ -107,6 +107,10 @@ def read_email():
 
             key = 'e' + m.group('key')
             if key in mail_data:
+                if mail_data[key]['status'] == status and \
+                   mail_data[key]['date'] == payment_date:
+                    continue
+                print "****", key
                 raise KeyError("Double key !!!")
 
             tpl = {
@@ -128,6 +132,7 @@ def read_email():
         )
         return mail_data
     except Exception, e:
+        raise e
         print unicode( e )
 
 def get_status( data ):
@@ -167,8 +172,12 @@ def encode_obj( obj ):
 def main():
     
     mail_data = read_email()
+    if not mail_data:
+        return
+
     actual = download_paiements()
     count = 0
+    created, edited, up_to_date = 0,0,0
     for key, data in mail_data.items():
         fstatus = get_status( data['status'] )
         cmd = data['cmd']
@@ -185,26 +194,31 @@ def main():
         if key not in actual.keys():
             print u"Creating payment for", cmd, key
             fm.doNew( encode_obj(obj) )
+            created += 1
             continue
 
         r = actual[key]
         flag = False
         for k,value in obj.items():
             if getattr( r, k ) != value:
-                print getattr( r, k ), value, getattr( r, k ) == value
                 if isinstance( value, unicode ):
                     v = value.encode( 'utf8' )
                 else:
                     v = value
                 setattr( r, k, v )
-                flag = True
+                # do not update if only donnesBrutes has changed
+                if k != 'donneesBrutes':
+                    flag = True
         if flag:
-            print u"Editing payment for", cmd, key
+            edited += 1
             fm.doEdit( r )
+            continue
 
-        count += 1
-        if count > 30:
-            break
+        up_to_date += 1
+
+    print "Number of payement line created: ", created
+    print "Number of edited payement", edited
+    print "Number of payement up to date", up_to_date
 
 if __name__ == '__main__':
     import argparse
