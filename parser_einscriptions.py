@@ -373,7 +373,7 @@ def main():
     ftp = ftplib.FTP( NORMA_FTP )
     ftp.login( NORMA_USER, NORMA_PSWD )
     
-    now = datetime.datetime.now().strftime( '%Y.%m.%d %H:%M:%S')
+    now = datetime.datetime.now()
 
     for query in parse( args.file ):
         uid = query['eleve']['uid']
