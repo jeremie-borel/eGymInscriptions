@@ -8,7 +8,8 @@ import requests.packages.urllib3.exceptions as ulib
 requests.packages.urllib3.disable_warnings(ulib.InsecureRequestWarning)
 
 # generic import...
-import re, sys, os, json, copy, base64, ftplib 
+import re, sys, os, json, copy, base64, ftplib
+import datetime
 
 # parsing import 
 from lxml import etree, objectify
@@ -372,6 +373,8 @@ def main():
     ftp = ftplib.FTP( NORMA_FTP )
     ftp.login( NORMA_USER, NORMA_PSWD )
     
+    now = datetime.datetime.now().strftime( '%Y.%m.%d %H:%M:%S')
+
     for query in parse( args.file ):
         uid = query['eleve']['uid']
     
@@ -474,6 +477,8 @@ def main():
                 _setattr( res, 'eleveOptionOa', eleve_art(ins) )
                 _setattr( res, 'eleveClasseSpeciale', eleve_speciale(ins) )
 
+            res.dateInscription = now
+
         except KeyError as e:
             print u"Could not process {}".format( uid )
             raise
@@ -484,7 +489,7 @@ def main():
             print u"Simulation de l'inscription de {}".format( uid )
         else:
             print u"Edition de l'inscription de {}".format( uid )
-            fm.doEdit( res )            
+            fm.doEdit( res )
         updated += 1
 
     print u"Total number of inscription (with photos: {}) in the xml: {}".format( photo, count )
