@@ -324,7 +324,7 @@ def eleve_math( item ):
     
 def eleve_speciale( item ):
     if item['hasClasseSpeciale']:
-        return 'oui'
+        return 'demandée'
     return ''
 
 def eleve_autre_formation( item ):
@@ -531,7 +531,7 @@ def main():
             if EC or ECG or EM:
                 _setattr( res, 'elevePrevision', voie.get('pronostic',None) )
                 _setattr( res, 'eleveOptionOa', eleve_art(ins) )
-                _setattr( res, 'eleveAffectationSpeciale', eleve_speciale(ins) )
+                _setattr( res, 'eleveClasseSpeciale', eleve_speciale(ins) )
 
             res.dateInscription = now
 
