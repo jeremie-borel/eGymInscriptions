@@ -324,7 +324,7 @@ def eleve_math( item ):
     
 def eleve_speciale( item ):
     if item['hasClasseSpeciale']:
-        return 'demandée'
+        return 'oui'
     return ''
 
 def eleve_autre_formation( item ):
