@@ -172,22 +172,32 @@ base_obj = {
     'numeroDemande': None,
 }
 
-class Dummy(object):
-    def __setattr__( self, key, value ):
-        print "***", key, value
-    def __getattr__( self, key ):
-        return None
-
-_pat1 = re.compile( "<demandeType>" )
-_pat2 = re.compile( "</demandeType>" )
+# class Dummy(object):
+#     def __setattr__( self, key, value ):
+#         print "***", key, value
+#     def __getattr__( self, key ):
+#         return None
     
+def parse_uid( source ):
+    count = 0
+    context = etree.iterparse(
+        source,
+        tag = NS2 + 'uid',
+        events=('end',),
+    )
+    knowns_uids = set()
+    for event, elem in context:
+        knowns_uids.add( elem.text )
+        elem.clear()
+    return knowns_uids
+
 def parse( source ):
     count = 0
     context = etree.iterparse(
         source,
         tag = NS1 + 'demandeType',
-        events=("start", "end"),
-        # events=('start',),
+        # events=("start", "end"),
+        events=('end',),
     )
 
     for event, elem in context:
@@ -204,6 +214,7 @@ def parse( source ):
             )
             elem.clear()
             yield test
+
 
 def etab_preavis( item ):
     s = []
@@ -318,6 +329,10 @@ def main():
     
     parser.add_argument('-f', '--file', dest="file", default="", required=True,
                             help='XML File to parse' )
+    parser.add_argument('-o', '--old-file', dest="old_file",
+                            default=None, required=False,
+                            help='XML File considered as already parsed.' )
+
     parser.add_argument('-T', '--true', dest="simulate", action="store_false",
                             default=True, required=False,
                             help='Simulation mode off. Does something on Inscription' )
@@ -336,9 +351,7 @@ def main():
                             help='Overwrites existing Inscription on Norma' )
 
     args = parser.parse_args()
-    
-    print args.filter
-    
+        
     print u"Loading XML file {}".format( args.file )
 
     if args.simulate:
@@ -373,12 +386,25 @@ def main():
     ftp = ftplib.FTP( NORMA_FTP )
     ftp.login( NORMA_USER, NORMA_PSWD )
     
+    old_uids = None
+    if args.old_file:
+        print "Parsing uids from old file"
+        old_uids = parse_uid( source=args.old_file )
+        print "Found {} processed uids".format(len(old_uids))
+
     now = datetime.datetime.now()
 
     for query in parse( args.file ):
         uid = query['eleve']['uid']
-    
+
         if args.filter and uid.lower() not in args.filter:
+            skipped += 1
+            continue
+
+        if old_uids and uid in old_uids:
+            skipped += 1
+            if args.verbose:
+                print "Uid {} is in old file".format( uid )
             continue
 
         if args.verbose:
