@@ -177,7 +177,27 @@ base_obj = {
 #         print "***", key, value
 #     def __getattr__( self, key ):
 #         return None
+
+def parse_test( source ):
+    count = 0
+    context = etree.iterparse(
+        source,
+        tag = NS1 + 'hasClasseSpeciale',
+        events=('end',),
+    )
+    t,f = 0,0
+    for event, elem in context:
+        if elem.text == 'true':
+            t += 1
+        elif elem.text == 'false':
+            f += 1
+        else:
+            raise ValueError( elem.text )
+            
+        elem.clear()
+    print u"Class spéciale: t:", t, " f:", f
     
+
 def parse_uid( source ):
     count = 0
     context = etree.iterparse(
@@ -332,6 +352,9 @@ def main():
     parser.add_argument('-o', '--old-file', dest="old_file",
                             default=None, required=False,
                             help='XML File considered as already parsed.' )
+    parser.add_argument('-t', '--test', dest="test", action='store_true',
+                            default=False, required=False,
+                            help='Does execute test on the xml.(debug)' )
 
     parser.add_argument('-T', '--true', dest="simulate", action="store_false",
                             default=True, required=False,
@@ -353,6 +376,13 @@ def main():
     args = parser.parse_args()
         
     print u"Loading XML file {}".format( args.file )
+
+    if args.test:
+        print "Test while parsing file"
+        parse_test( source=args.file )
+        print "Done!"
+        return
+
 
     if args.simulate:
         print u"Simulation mode ON"
@@ -501,7 +531,7 @@ def main():
             if EC or ECG or EM:
                 _setattr( res, 'elevePrevision', voie.get('pronostic',None) )
                 _setattr( res, 'eleveOptionOa', eleve_art(ins) )
-                _setattr( res, 'eleveClasseSpeciale', eleve_speciale(ins) )
+                _setattr( res, 'eleveAffectationSpeciale', eleve_speciale(ins) )
 
             res.dateInscription = now
 
