@@ -19,3 +19,7 @@ git clone https://github.com/jeremie-borel/eGymInscriptions
 cd eGymInscriptions
 python parser_einscriptions.py
 ```
+
+### Parser les factures
+La lecture du fichier xl demande le paquet openpyxl.
+
