@@ -8,7 +8,7 @@ import requests.packages.urllib3.exceptions as ulib
 requests.packages.urllib3.disable_warnings(ulib.InsecureRequestWarning)
 
 # generic import...
-import re, sys, os, json, copy, base64, ftplib
+import re, sys, os, json, copy, base64, paramiko
 import datetime
 
 # parsing import 
@@ -19,9 +19,9 @@ from lxml.objectify import StringElement, IntElement, FloatElement
 from io import StringIO, BytesIO
 
 INSCRIPTION_URL = None
-NORMA_FTP = None
-NORMA_USER = None
-NORMA_PSWD = None
+GYC_FTP = None
+GYC_USER = None
+GYC_PSWD = None
 
 # must correspond to the namespaces used in the xml.
 NS1 = '{http://evd.vd.ch/xmlns/eVD-0041/2}'
@@ -38,12 +38,12 @@ from PyFileMaker import FMServer
 # from libs.constantes import *
 # from inscriptions.helper import *
 
-if not NORMA_FTP or not NORMA_USER or not NORMA_PSWD or not INSCRIPTION_URL:
+if not GYC_FTP or not GYC_USER or not GYC_PSWD or not INSCRIPTION_URL:
     print u"""
     
     Les mots de passes pour accèder au fichier Inscription sont 
     introuvables. Vous devez manuellement renseigner les variables 
-    en majuscule dans le fichier (INSCRIPION_URL et NORMA_xx ).
+    en majuscule dans le fichier (INSCRIPION_URL et GYC_xx ).
     
     INSCRIPTION_URL doit avoir le format: 
     https://<username>:<password>@<ip_Inscription>:443 
@@ -51,13 +51,25 @@ if not NORMA_FTP or not NORMA_USER or not NORMA_PSWD or not INSCRIPTION_URL:
     accéder à l'xml d'Inscription.
     
     Les autres sont par exemple:
-    NORMA_FTP = '10.224.255.25'
-    NORMA_USER = 'joe'
-    NORMA_PSWD = '123'
+    GYC_FTP = '10.224.255.25'
+    GYC_USER = 'joe'
+    GYC_PSWD = '123'
 
     """
     sys.exit(1)
 
+_sftp = None
+def get_sftp():
+    global _sftp
+    if _sftp:
+        return _sftp
+    s = paramiko.SSHClient()
+    s.set_missing_host_key_policy( paramiko.AutoAddPolicy() )
+    s.connect( GYC_FTP, username=GYC_USER, password=GYC_PSWD )
+
+    _sftp = s.open_sftp()
+    _sftp.chdir( 'photos' )
+    return _sftp
 
 def node_to_obj( xml_element, map, ns=[ ] ):
     """Transforms an xml element into a python objects.
@@ -410,11 +422,6 @@ def main():
     updated = 0
     skipped = 0
     photo = 0
-
-    if args.verbose:
-        print "Setting FTP"
-    ftp = ftplib.FTP( NORMA_FTP )
-    ftp.login( NORMA_USER, NORMA_PSWD )
     
     old_uids = None
     if args.old_file:
@@ -473,9 +480,11 @@ def main():
                 tfile.write( base64.b64decode( image ) )
                 
             data = BytesIO( base64.b64decode( image ) )
-            name = 'photos_lagapeo/' + uid.lower() + ".jpg"
-            ftp.storbinary("STOR " + name, data, 1024*8 )
-        
+            name = uid.lower() + ".jpg"
+
+            sftp = get_sftp()
+            sftp.putfo( data, name )
+    
         try:
             ecole = ins['formation']
             voie = query['previsionVoie']
