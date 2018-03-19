@@ -490,6 +490,7 @@ def main():
             voie = query['previsionVoie']
             affectation = query['affectation']
             comp = query['donneesComplementaires']
+            zone = affectation.get( 'zoneAffectationAuto',None)
 
             if image:
                 _setattr( res, 'flagPhotoAUploader', '1' )
@@ -498,7 +499,7 @@ def main():
             _setattr( res, 'etabPreavis', etab_preavis( query ) )
             _setattr( res, 'etabRemarque', query['preavis']['remarquesComplementaires'] )
             _setattr( res, 'eleveAutreFormation', eleve_autre_formation(ins) )
-            _setattr( res, 'zoneRecrutement',affectation.get( 'zoneAffectationAuto',None))
+            _setattr( res, 'zoneRecrutement',zone)
             _setattr( res, 'autreZoneAffectation',
                       affectation.get( 'zoneAffectationSouhaitee',None) )
             _setattr( res, 'numeroDemande', query.get('numeroDemande','') )
@@ -551,9 +552,9 @@ def main():
         res.flagInscriptionOK = 1
         res.flagEInscription = 1
         if args.simulate:
-            print u"Simulation de l'inscription de {}".format( uid )
+            print u"Simulation de l'inscription de {} ({})".format( uid, zone )
         else:
-            print u"Edition de l'inscription de {}".format( uid )
+            print u"Edition de l'inscription de {} ({})".format( uid, zone )
             fm.doEdit( res )
         updated += 1
 
