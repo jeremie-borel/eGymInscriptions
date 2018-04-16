@@ -37,7 +37,10 @@ def parse_excel( filename ):
     tpl = []
     for row in ws.iter_rows( min_row=2, min_col=1, max_col=14 ):
         ukey = row[1].value
-        assert( ukey not in all_rows )
+        if ukey in all_rows:
+            # raise ValueError("ukey (col B) {} is here twice".format(ukey) )
+            print "WARNING: key {} is present twice. Partial payment ?".format(ukey)
+            continue
         all_rows.add(ukey)
 
         # not used but ensure the column is a date.
