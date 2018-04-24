@@ -9,8 +9,7 @@ source bin/activate
 
 ### obligatoire
 ```
-pip install lxml paramiko
-pip install git+https://github.com/jeremie-borel/PyFileMaker.git
+pip install -r requirements.txt
 git clone https://github.com/jeremie-borel/eGymInscriptions
 ```
 
