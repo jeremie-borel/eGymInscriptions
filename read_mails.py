@@ -82,6 +82,8 @@ def read_email():
 
             m = _pat.search( subject )
             if not m:
+                if "TEST" in subject:
+                    continue
                 unmatched += 1
                 print "-"*30
                 print "OUPS:::, not a confirmation mail ?"
