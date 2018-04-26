@@ -431,6 +431,9 @@ def main():
 
     now = datetime.datetime.now()
 
+    if args.filter:
+        print "Filtering on '{}'".format("', '".join(args.filter))
+
     for query in parse( args.file ):
         uid = query['eleve']['uid']
 
@@ -456,7 +459,8 @@ def main():
 
         image = query['donneesComplementaires']['photo']
         if args.verbose:
-            print "Len of image is ", len(image)
+            print "Len of image is ", (len(image) if image else 'NA')
+            print "Numero de demande:", query.get('numeroDemande','NA')
 
         resultset = fm.doFind({'uid':uid})
 
