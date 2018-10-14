@@ -1,6 +1,6 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
-
+from __future__ import unicode_literals, absolute_import
 #test
 # tolerate any ssl certificate
 import requests
@@ -33,13 +33,13 @@ try:
 except ImportError:
     pass
 
-from PyFileMaker import FMServer
+from pyfilemaker2.server import FmServer
 
 # from libs.constantes import *
 # from inscriptions.helper import *
 
 if not GYC_FTP or not GYC_USER or not GYC_PSWD or not INSCRIPTION_URL:
-    print u"""
+    print """
     
     Les mots de passes pour accèder au fichier Inscription sont 
     introuvables. Vous devez manuellement renseigner les variables 
@@ -168,17 +168,18 @@ base_obj = {
         'hasBilingueAllemand': None,
         'hasBilingueItalien': None,
         'hasClasseSpeciale': None,
+        'dateInscription': None,
     },
     'affectation': {
         'zoneAffectationAuto': None,
         'zoneAffectationSouhaitee': None,
     },
     'donneesComplementaires': {
-        'etatCivilPere': None,
-        'etatCivilMere': None,
-        'professionMere': None,
-        'professionPere': None,
-        'assurance': None,
+        # 'etatCivilPere': None,
+        # 'etatCivilMere': None,
+        # 'professionMere': None,
+        # 'professionPere': None,
+        # 'assurance': None,
         'photo': None,
     },
     'numeroDemande': None,
@@ -207,7 +208,7 @@ def parse_test( source ):
             raise ValueError( elem.text )
             
         elem.clear()
-    print u"Class spéciale: t:", t, " f:", f
+    print "Class spéciale: t:", t, " f:", f
     
 
 def parse_uid( source ):
@@ -270,29 +271,29 @@ def etab_pronostic( item ):
     value = item['pronostic']
     if value in ('Admis', 'Incertain', 'Certain', 'Probable'):
         return value
-    print u"Pronostic inconnu: {} ({})".format( value, uid )
+    print "Pronostic inconnu: {} ({})".format( value, uid )
     return ""
 
 def eleve_os( item ):
     _map = {
-        u'Arts Visuels' : u'arts visuels',
-        u'Biologie et Chimie': u'biologie et chimie',
-        u'Economie et Droit': u'économie et droit',
-        u'Espagnol': u'espagnol',
-        u'Latin (Suite OS)': u'latin',
-        u'Italien (Suite OS)': u'italien',
-        u'Grec': u'grec',
-        u'Musique': u'musique',
-        u'Philosophie et Psychologie': 'philosophie et psychologie',
-        u'Physique et Application des Mathématiques': u'physique et applications des mathématiques',
+        'Arts Visuels' : 'arts visuels',
+        'Biologie et Chimie': 'biologie et chimie',
+        'Economie et Droit': 'économie et droit',
+        'Espagnol': 'espagnol',
+        'Latin (Suite OS)': 'latin',
+        'Italien (Suite OS)': 'italien',
+        'Grec': 'grec',
+        'Musique': 'musique',
+        'Philosophie et Psychologie': 'philosophie et psychologie',
+        'Physique et Application des Mathématiques': 'physique et applications des mathématiques',
         }
     return _map[ item['optionSpecifique'] ]
 
 def eleve_art( item ):
     _map = {
-        u'Arts Visuels' : u'arts visuels',
-        u'Musique': u'musique',
-        u'Sans Préférence': u'sans préférence',
+        'Arts Visuels' : 'arts visuels',
+        'Musique': 'musique',
+        'Sans Préférence': 'sans préférence',
         }
     return _map[ item['disciplineArtistique'] ]
 
@@ -309,25 +310,25 @@ def eleve_bilingue( item ):
 
 def eleve_langue2_matu( item ):
     _map = {
-        u'Allemand' : u'allemand',
-        u'Italien Débutant': u'italien débutant',
-        u'Italien (Suite OS)': u'italien standard',
+        'Allemand' : 'allemand',
+        'Italien Débutant': 'italien débutant',
+        'Italien (Suite OS)': 'italien standard',
         }
     return _map[ item['langue2'] ]
 
 def eleve_langue3_matu( item ):
     _map = {
-        u'Grec' : u'grec',
-        u'Anglais': u'anglais',
-        u'Latin (Suite OS)': u'latin',
+        'Grec' : 'grec',
+        'Anglais': 'anglais',
+        'Latin (Suite OS)': 'latin',
         }
     return _map[ item['langue3'] ]
 
 def eleve_langue2( item ):
     _map = {
-        u'Allemand' : u'allemand',
-        u'Italien (Suite OS)': u'italien',
-        u'Italien Débutant': u'italien',
+        'Allemand' : 'allemand',
+        'Italien (Suite OS)': 'italien',
+        'Italien Débutant': 'italien',
         }
     return _map[ item['langue2'] ]
 
@@ -342,13 +343,13 @@ def eleve_speciale( item ):
 def eleve_autre_formation( item ):
     s = []
     if item['hasRaccordement']:
-        s.append( u'raccordement de type II' )
+        s.append( 'raccordement de type II' )
     if item['hasApprentissage']:
-        s.append( u'apprentissage' )
+        s.append( 'apprentissage' )
     if item['autreEcole']:
         s.append( item['autreEcole'] )
 
-    return u"\n".join( s ) if len(s) else ""
+    return "\n".join( s ) if len(s) else ""
 
 def main():
 
@@ -387,7 +388,7 @@ def main():
 
     args = parser.parse_args()
         
-    print u"Loading XML file {}".format( args.file )
+    print "Loading XML file {}".format( args.file )
 
     if args.test:
         print "Test while parsing file"
@@ -397,25 +398,25 @@ def main():
 
 
     if args.simulate:
-        print u"Simulation mode ON"
+        print "Simulation mode ON"
     else:
-        print u"Simulation mode OFF"
+        print "Simulation mode OFF"
     
-    fm = FMServer( url=INSCRIPTION_URL, debug=False )
-    fm.setDb( 'Inscription' )
-    # fm.setDb( 'InscriptionJeremie' )
-    fm.setLayout( 'STDInscription' )
+    fm = FmServer( 
+        url=INSCRIPTION_URL,
+        request_kwargs={
+            'timeout': 60,
+        },
+        debug=False,
+        db='Inscription',
+    )
+    fm.layout = 'STDInscription' 
 
     def _setattr( item, key, value ):
         if value is None:
             return
-        if isinstance( value, unicode ):
-            v = value.encode('utf8')
-        else:
-            v = value
-            
-        if getattr( item, key ) != value:
-            setattr( item, key, v )
+        if item.get( key, None ) != value:
+            item[key] = value
             
     count = 0
     found = 0
@@ -454,7 +455,7 @@ def main():
         
         ins = query['inscription']
         if not ins:
-            print u"Pas d'inscription pour {}".format( uid )
+            print "Pas d'inscription pour {}".format( uid )
             continue
 
         image = query['donneesComplementaires']['photo']
@@ -462,13 +463,13 @@ def main():
             print "Len of image is ", (len(image) if image else 'NA')
             print "Numero de demande:", query.get('numeroDemande','NA')
 
-        resultset = fm.doFind({'uid':uid})
+        resultset = tuple( fm.do_find({'uid':uid},max=3) )
 
         if not resultset:
-            print u"uid {} not found in the FMS db".format(uid)
+            print "uid {} not found in the FMS db".format(uid)
             continue
         if len(resultset)>1:
-            print u"More than one uid found for {} in the FMS db".format(uid)
+            print "More than one uid found for {} in the FMS db".format(uid)
             continue
 
         found += 1
@@ -514,12 +515,12 @@ def main():
             # _setattr( res, 'pereProfession', comp.get('professionPere',None) )
             # _setattr( res, 'eleveAssurance', comp.get('assurance',None) )
     
-            EM = bool( ecole == u'Ecole de maturité' )
-            ECG = bool( ecole == u'Ecole de culture générale' )
-            EC = bool( ecole == u'Ecole de commerce' )
+            EM = bool( ecole == 'Ecole de maturité' )
+            ECG = bool( ecole == 'Ecole de culture générale' )
+            EC = bool( ecole == 'Ecole de commerce' )
 
             if not EM and not EC and not ECG:
-                print u"L'élève {} n'est inscrit dans aucune école.".format(uid)
+                print "L'élève {} n'est inscrit dans aucune école.".format(uid)
                 continue
             
             if EM:
@@ -550,22 +551,22 @@ def main():
             res.dateInscription = now
 
         except KeyError as e:
-            print u"Could not process {}".format( uid )
+            print "Could not process {}".format( uid )
             raise
 
         res.flagInscriptionOK = 1
         res.flagEInscription = 1
         if args.simulate:
-            print u"Simulation de l'inscription de {} ({})".format( uid, zone )
+            print "Simulation de l'inscription de {} ({})".format( uid, zone )
         else:
-            print u"Edition de l'inscription de {} ({})".format( uid, zone )
-            fm.doEdit( res )
+            print "Edition de l'inscription de {} ({})".format( uid, zone )
+            fm.do_edit( res )
         updated += 1
 
-    print u"Total number of inscription (with photos: {}) in the xml: {}".format( photo, count )
-    print u"Total number of uid found in Norma: {}".format( found )
-    print u"Total number of record skipped in Norma: {}".format( skipped )
-    print u"Total number of record edited in Norma: {}".format( updated )
+    print "Total number of inscription (with photos: {}) in the xml: {}".format( photo, count )
+    print "Total number of uid found in Norma: {}".format( found )
+    print "Total number of record skipped in Norma: {}".format( skipped )
+    print "Total number of record edited in Norma: {}".format( updated )
         
 if __name__ == '__main__':
     main()
