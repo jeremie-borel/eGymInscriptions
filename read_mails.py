@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals, absolute_import
 
 import sys, os, copy
 import logging, datetime, imaplib, email, email.header, re
@@ -23,10 +24,16 @@ except ImportError:
     pass
 
 
-from PyFileMaker import FMServer
-fm = FMServer( url=INSCRIPTION_URL, debug=False )
-fm.setDb( 'Inscription' )
-fm.setLayout( 'XmlPaiement' )
+from pyfilemaker2 import FmServer
+fm = FmServer( 
+    url=INSCRIPTION_URL,
+    request_kwargs={
+        'timeout': 60,
+    },
+    debug=False,
+    db='Inscription',
+    layout = 'XmlPaiement',
+)
 
 ELECTRONIQUE = u'électronique'
 
@@ -156,20 +163,13 @@ def get_status( data ):
 def download_paiements():
     print "Downloading existing reccords from Inscription..."
 
-    resultset = fm.doFind(encode_obj({
+    resultset = fm.do_find({
         'modePaiement':ELECTRONIQUE,
-    }))
+    })
 
-    ret = { r.paiementId:r for r in resultset }
+    ret = { r['paiementId']:r for r in resultset }
     return ret
 
-def encode_obj( obj ):
-    """Encodes all unicode as utf8 strings"""
-    o = copy.copy( obj )
-    for k, v in o.iteritems():
-        if isinstance( v, unicode ):
-            o[k] = v.encode( 'utf8' )
-    return o
 
 def main():
     
@@ -195,25 +195,21 @@ def main():
 
         if key not in actual.keys():
             print u"Creating payment for", cmd, key
-            fm.doNew( encode_obj(obj) )
+            fm.do_new( obj )
             created += 1
             continue
 
         r = actual[key]
         flag = False
         for k,value in obj.items():
-            if getattr( r, k ) != value:
-                if isinstance( value, unicode ):
-                    v = value.encode( 'utf8' )
-                else:
-                    v = value
-                setattr( r, k, v )
+            if k in r and r[k] != value:
+                r[k] = value
                 # do not update if only donnesBrutes has changed
                 if k != 'donneesBrutes':
                     flag = True
         if flag:
             edited += 1
-            fm.doEdit( r )
+            fm.do_edit( r )
             continue
 
         up_to_date += 1
@@ -226,7 +222,7 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser(
-        description=u"""Upload des informations de paiements *électroniques*
+        description="""Upload des informations de paiements *électroniques*
         depuis les mails de confirmation Postfinance vers le fichier 
         Inscription.
 
@@ -247,16 +243,16 @@ if __name__ == '__main__':
 
     if args.test:
         print "tagada"
-        fm.setLayout( 'StdInscription' )
-        # fm.doView()
-        print "oualalal"
-        # fm = FMServer( url=INSCRIPTION_URL, debug=False )
-        # fm.setDb( 'essaimneuf' )
+        # fm.setLayout( 'StdInscription' )
+        # # fm.doView()
+        # print "oualalal"
+        # # fm = FMServer( url=INSCRIPTION_URL, debug=False )
+        # # fm.setDb( 'essaimneuf' )
 
-        # fm.setLayout( 'StdEleves' )
+        # # fm.setLayout( 'StdEleves' )
 
-        r = fm.doFind({'uid':'29cd84929987490c85b97f6567d49511'})
-        print r
+        # r = fm.doFind({'uid':'29cd84929987490c85b97f6567d49511'})
+        # print r
         sys.exit(0)
 
     main()
