@@ -173,6 +173,7 @@ base_obj = {
     'affectation': {
         'zoneAffectationAuto': None,
         'zoneAffectationSouhaitee': None,
+        'motivation': None,
     },
     'donneesComplementaires': {
         # 'etatCivilPere': None,
@@ -280,8 +281,8 @@ def eleve_os( item ):
         'Biologie et Chimie': 'biologie et chimie',
         'Economie et Droit': 'économie et droit',
         'Espagnol': 'espagnol',
-        'Latin (Suite OS)': 'latin',
-        'Italien (Suite OS)': 'italien',
+        'Latin (suite OS)': 'latin',
+        'Italien (suite OS)': 'italien',
         'Grec': 'grec',
         'Musique': 'musique',
         'Philosophie et Psychologie': 'philosophie et psychologie',
@@ -313,6 +314,7 @@ def eleve_langue2_matu( item ):
         'Allemand' : 'allemand',
         'Italien Débutant': 'italien débutant',
         'Italien (Suite OS)': 'italien standard',
+        'Italien standard (Suite OS)': 'italien standard',
         }
     return _map[ item['langue2'] ]
 
@@ -327,8 +329,8 @@ def eleve_langue3_matu( item ):
 def eleve_langue2( item ):
     _map = {
         'Allemand' : 'allemand',
-        'Italien (Suite OS)': 'italien',
-        'Italien Débutant': 'italien',
+        # 'Italien (Suite OS)': 'italien',
+        'Italien': 'italien',
         }
     return _map[ item['langue2'] ]
 
@@ -437,7 +439,6 @@ def main():
 
     for query in parse( args.file ):
         uid = query['eleve']['uid']
-
         if args.filter and uid.lower() not in args.filter:
             skipped += 1
             continue
@@ -507,6 +508,9 @@ def main():
             _setattr( res, 'zoneRecrutement',zone)
             _setattr( res, 'autreZoneAffectation',
                       affectation.get( 'zoneAffectationSouhaitee',None) )
+            _setattr( res, 'motivationAutreZoneAffectation',
+                      affectation.get( 'motivation',None) )
+
             _setattr( res, 'numeroDemande', query.get('numeroDemande','') )
 
             # _setattr( res, 'mereEtatCivil', comp.get('etatCivilMere',None) )
