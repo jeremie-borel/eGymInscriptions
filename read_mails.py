@@ -145,10 +145,17 @@ def read_email():
         print unicode( e )
 
 def get_status( data ):
+    """Le statut numérique du mail est mappé vers le 
+    binaire OK/ERREUR pour le fichier Inscription
+    
+    OK: le paiement a été effectué
+    ERREUR: NOT OK.
+    """
     _map = {
         '9':u'OK',
         '91':u'OK',
         '1':u'ERREUR',
+        '2':u'ERREUR',
     }
     try:
         return _map[data]
@@ -181,7 +188,14 @@ def main():
     count = 0
     created, edited, up_to_date = 0,0,0
     for key, data in mail_data.items():
-        fstatus = get_status( data['status'] )
+        try:
+            fstatus = get_status( data['status'] )
+        except Exception as e:
+            print u"Exception while parsing status of {}".format(key)
+            print u"*"*30
+            print data
+            print u"*"*30
+            continue
         cmd = data['cmd']
         obj = {
             'paiementId': key,
