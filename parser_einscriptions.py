@@ -556,7 +556,11 @@ def main():
 
         except KeyError as e:
             print "Could not process {}".format( uid )
-            raise
+            #print "*"*40
+            #print json.dumps( query, indent=2 )
+            print "*"*40
+            # raise
+            continue
 
         res.flagInscriptionOK = 1
         res.flagEInscription = 1
