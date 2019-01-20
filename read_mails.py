@@ -115,7 +115,7 @@ def read_email():
                 continue
 
             if status == '0':
-                # partial or incomplete payment
+                # incomplete or invalid payment
                 continue
 
             key = 'e' + m.group('key')
