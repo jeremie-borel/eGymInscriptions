@@ -114,12 +114,17 @@ def read_email():
             if 'test' in status.lower():
                 continue
 
+            if status == '0':
+                # partial or incomplete payment
+                continue
+
             key = 'e' + m.group('key')
             if key in mail_data:
                 if mail_data[key]['status'] == status and \
                    mail_data[key]['date'] == payment_date:
                     continue
-                print "****", key
+                print "****", key, status, cmd_id
+                print "NNNNN", mail_data[key]['status']
                 raise KeyError("Double key !!!")
 
             tpl = {
