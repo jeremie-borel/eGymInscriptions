@@ -10,6 +10,7 @@ requests.packages.urllib3.disable_warnings(ulib.InsecureRequestWarning)
 # generic import...
 import re, sys, os, json, copy, base64, paramiko
 import datetime
+from collections import defaultdict
 
 # parsing import 
 from lxml import etree, objectify
@@ -71,126 +72,142 @@ def get_sftp():
     _sftp.chdir( 'photos' )
     return _sftp
 
-def node_to_obj( xml_element, map, ns=[ ] ):
-    """Transforms an xml element into a python objects.
+def build_object( elem ):
+    class _Unset: pass
 
-    The properties that will be transformed are those present in *map*.
-    E.g. if map is {'foo':None, 'bar':None} then the returned objects 
-    has obj.foo and obj.bar attribute regarless of the xml also having 
-    these nodes.
-
-    *ns* is a list of namespaces that will be used.
-    """
-    def get_node( xml, key, ns=[ ] ):
-        for n in ns:
-            v = getattr( xml_element, n+key, None )
-            if v is not None:
-                return v
-        return None
-    
-    ret = copy.deepcopy( map )
-
-    for key, value in map.iteritems():
-        if isinstance( value, dict ):
-            xml = get_node( xml_element, key, ns )
-            if xml is not None:
-                ret[key] = node_to_obj( xml, value, ns=ns )
-            else:
-                ret[key] = {}
+    def _get( node, key, ns=None, default=_Unset ):
+        _ns = ns or ""
+        try:
+            val = node[_ns+key]
+            if isinstance( val, objectify.BoolElement ):
+                return bool(val)
+            if isinstance( val, objectify.IntElement ):
+                return int(val)
+            if isinstance( val, objectify.FloatElement ):
+                return float(val)
+            if isinstance( val, objectify.StringElement ):
+                return unicode(val)
+            raise TypeError( "Unkown xml type {}".format( type(val) ))
+        except AttributeError:
+            if default is _Unset:
+                raise AttributeError("No such attribute {}".format(key))
+            return default
         
-        elif value is None or isinstance( value, basestring ):
-            tag = value or key
-            item = get_node( xml_element, tag, ns )
-            if isinstance( item, (basestring, StringElement) ):
-                ret[key] = unicode( item )
-            elif isinstance( item, (int, IntElement) ):
-                ret[key] = int( item )
-            elif isinstance( item, (float, FloatElement) ):
-                ret[key] = float( item )
-            else:
-                ret[key] = item
+        
+    xml = objectify.fromstring(  etree.tostring(elem) )
 
-        # here, value must be a callable
-        else:
-            ret[key] = value( xml_element )
-            
-    return ret
+    el = xml.eleve
+    ins = xml.inscription
 
+    obj = {
+        'numeroDemande': _get( xml, 'numeroDemande' ),
+        'eleve' : {
+            'uid': _get( el, 'uid', ns=NS2 ),
+            'nom': _get( el, 'nom', ns=NS2 ),
+            'prenom': _get( el, 'prenom', ns=NS2),
+            'navs13': _get( el, 'navs13', ns=NS2 ),
+            'anneeVoie' : _get( el, 'anneeVoie', ns=NS2 ),
+        },
+        'preavis': {
+            'hasRaccordement': bool(xml['preavis']['hasRaccordement']),
+            'hasPasGymnase': bool(xml['preavis']['hasPasGymnase']),
+            'hasPasRecommandation': bool(xml['preavis']['hasPasRecommandation']),
+            'remarquesComplementaires': _get( xml['preavis'], 'remarquesComplementaires', ns=None, default=None ),
+        },
+        'inscription': {
+            'formation': _get( ins, 'formation' ),
+            'hasRaccordement': _get( ins, 'hasRaccordement' ),
+            'hasApprentissage': _get( ins, 'hasApprentissage' ),
+            'autreEcole': _get( ins, 'autreEcole', default=None ),
+            'langue2': _get( ins, 'langue2' ),
+            'langue3': _get( ins, 'langue3', default=None ),
+            'disciplineArtistique': _get( ins, 'disciplineArtistique' ),
+            'niveauMath': _get( ins, 'niveauMath', default=None ),
+            'optionSpecifique': _get( ins, 'optionSpecifique', default=None ),
+            'hasBilingueAnglais': _get( ins, 'hasBilingueAnglais' ),
+            'hasBilingueAllemand': _get( ins, 'hasBilingueAllemand' ),
+            'hasBilingueItalien': _get( ins, 'hasBilingueItalien' ),
+            'hasClasseSpeciale': _get( ins, 'hasClasseSpeciale' ),
+            'dateInscription': _get( ins, 'dateInscription' ),
+        },
+        'affectation': {
+            'zoneAffectationAuto': _get( xml.affectation, 'zoneAffectationAuto', default=None ),
+            'zoneAffectationSouhaitee': _get( xml.affectation, 'zoneAffectationSouhaitee', default=None ),
+            'motivation': _get( xml.affectation, 'motivation', default=None ),
+        },
+    }
 
-# Minimalistic format for the xml for the parser.
-base_obj = {
-    'eleve' : {
-        'uid': None,
-        'nom': None,
-        'prenom': None,
-        'navs13': None,
-        'anneeVoie' : None,
-    },
-    'previsionVoie': {
-        'pronostic': None,
-        'vgCours2' : None,
-        'vgSem1': None,
-        'vpTotal1': None,
-        'vpTotal2': None,
-        },
-    'preavis': {
-        'hasRaccordement': None,
-        'hasPasGymnase': None,
-        'hasPasRecommandation': None,
-        'remarquesComplementaires': None,
-        'preavisMaturite': {
-            'langue2': None,
-            'langue3': None,
-            'niveauMath': None,
-            'optionSpecifique': None,
-            'disciplineArtistique': None,
-        },
-        'preavisEC' : {
-            'langue2': None,
-            'disciplineArtistique': None,
-        },
-        'preavisECG' : {
-            'langue2': None,
-            'disciplineArtistique': None,
-        },
-    },
-    'inscription': {
-        'formation': None,
-        'hasRaccordement': None,
-        'hasApprentissage': None,
-        'autreEcole': None,
-        'langue2': None,
-        'langue3': None,
-        'disciplineArtistique': None,
-        'niveauMath': None,
-        'optionSpecifique': None,
-        'hasBilingueAnglais': None,
-        'hasBilingueAllemand': None,
-        'hasBilingueItalien': None,
-        'hasClasseSpeciale': None,
-        'dateInscription': None,
-    },
-    'affectation': {
-        'zoneAffectationAuto': None,
-        'zoneAffectationSouhaitee': None,
-        'motivation': None,
-    },
-    'donneesComplementaires': {
-        # 'etatCivilPere': None,
-        # 'etatCivilMere': None,
-        # 'professionMere': None,
-        # 'professionPere': None,
-        # 'assurance': None,
-        'photo': None,
-    },
-    'numeroDemande': None,
-}
+    # previsionVoie
+    try:
+        obj['pronostic'] = unicode(xml['previsionVoie']['pronostic'])
+    except AttributeError:
+        obj['pronostic'] =  None
 
-# class Dummy(object):
-#     def __setattr__( self, key, value ):
-#         print "***", key, value
-#     def __getattr__( self, key ):
-#         return None
+    # construction des preavis MATU, EC, ECG
+    try:
+        obj['preavis']['preavisMaturite'] = {}
+        preavis = xml['preavis']['preavisMaturite']
+        tmp = obj['preavis']['preavisMaturite']
+        tmp['langue2'] = _get( preavis, key='langue2' )
+        tmp['langue3'] = _get( preavis, key='langue3' )
+        tmp['niveauMath'] = _get( preavis, key='niveauMath' )
+        tmp['optionSpecifique'] = _get( preavis, key='optionSpecifique' )
+        tmp['disciplineArtistique'] = _get( preavis, key='disciplineArtistique' )
+    except AttributeError:
+        pass
+    try:
+        obj['preavis']['preavisEC'] = {}
+        preavis = xml['preavis']['preavisEC']
+        tmp = obj['preavis']['preavisEC']
+        tmp['langue2'] = _get( preavis, key='langue2' )
+        tmp['disciplineArtistique'] = _get( preavis, key='disciplineArtistique' )
+    except AttributeError:
+        pass
+    try:
+        obj['preavis']['preavisECG'] = {}
+        preavis = xml['preavis']['preavisECG']
+        tmp = obj['preavis']['preavisECG']
+        tmp['langue2'] = _get( preavis, key='langue2' )
+        tmp['disciplineArtistique'] = _get( preavis, key='disciplineArtistique' )
+    except AttributeError:
+        pass
+
+    # construction des niveaux des matières du sec I.
+    try:
+        obj['eleve']['niveaux'] = {}
+        for niveau in el[NS2+'niveaux'][NS2+'niveau']:
+            matiere = _get( niveau, 'matiere', ns=NS2 )
+            valeur = _get( niveau, 'valeur', ns=NS2 )
+            if not matiere:
+                raise ValueError("No matiere defined")
+            if matiere in obj['eleve']['niveaux']:
+                raise KeyError("Matiere is defined twice")
+            obj['eleve']['niveaux'][matiere] = valeur
+    except AttributeError:
+        pass
+
+    # resultats du sec I
+    tmp = None
+    try:
+        obj['eleve']['resultats'] = {}
+        tmp = obj['eleve']['resultats']
+        for result in el[NS2+'resultats'][NS2+'resultat']:
+            grp = _get( result, 'groupe', ns=NS2 )
+            tmp[grp] = {
+                'points': _get( result, 'points', ns=NS2 ),
+                'nbDisciplines': _get( result, 'nbDisciplines', ns=NS2 ),
+            }
+    except AttributeError:
+        pass
+
+    # photo 
+    try:
+        obj['photo'] = str( xml['donneesComplementaires']['photo'] )
+    except AttributeError:
+        obj['photo'] = None
+
+    return obj
+
 
 def parse_test( source ):
     count = 0
@@ -239,31 +256,26 @@ def parse( source ):
             pass
         elif event == 'end':
             count += 1
-            obj = objectify.fromstring(  etree.tostring(elem) )
 
-            test = node_to_obj(
-                obj,
-                base_obj,
-                ns=(NS1,NS2)
-            )
+            test = build_object( elem )
+            yield elem, test
             elem.clear()
-            yield test
 
 
 def etab_preavis( item ):
     s = []
     item = item['preavis']
-    if item['hasRaccordement']:
+    if bool(item['hasRaccordement']):
         s.append( 'Rac II' )
-    if item['hasPasGymnase']:
+    if bool(item['hasPasGymnase']):
         s.append( 'Pas gymnase' )
-    if item['preavisMaturite']:
+    if bool(item['preavisMaturite']):
         s.append( 'EM' )
-    if item['preavisEC']:
+    if bool(item['preavisEC']):
         s.append( 'EC' )
-    if item['preavisECG']:
+    if bool(item['preavisECG']):
         s.append( 'ED' )
-    if item['hasPasRecommandation']:
+    if bool(item['hasPasRecommandation']):
         s.append( 'Aucune recommandation' )
     
     return "\n".join( s ) if len(s) else ""
@@ -300,11 +312,11 @@ def eleve_art( item ):
 
 def eleve_bilingue( item ):
     s = []
-    if item['hasBilingueAnglais']:
+    if bool(item['hasBilingueAnglais']):
         s.append( 'Anglais' )
-    if item['hasBilingueAllemand']:
+    if bool(item['hasBilingueAllemand']):
         s.append( 'Allemand' )
-    if item['hasBilingueItalien']:
+    if bool(item['hasBilingueItalien']):
         s.append( 'Italien' )
         
     return "\n".join( s ) if len(s) else ""
@@ -335,23 +347,32 @@ def eleve_langue2( item ):
     return _map[ item['langue2'] ]
 
 def eleve_math( item ):
-    return item['niveauMath'].lower()
+    return unicode(item['niveauMath']).lower()
     
 def eleve_speciale( item ):
-    if item['hasClasseSpeciale']:
+    if bool(item['hasClasseSpeciale']):
         return 'oui'
     return ''
 
 def eleve_autre_formation( item ):
     s = []
-    if item['hasRaccordement']:
+    if bool(item['hasRaccordement']):
         s.append( 'raccordement de type II' )
-    if item['hasApprentissage']:
+    if bool(item['hasApprentissage']):
         s.append( 'apprentissage' )
-    if item['autreEcole']:
-        s.append( item['autreEcole'] )
+    if item['autreEcole'] is not None:
+        s.append( unicode(item['autreEcole']) )
 
-    return "\n".join( s ) if len(s) else ""
+    return "\n".join( s ) if len(s) else None
+
+def eleve_niveaux( item ):
+    if not item.keys():
+        return None
+    out = [ (matiere, niveau) for matiere,niveau in item.items() ]
+    out = sorted( out, key=lambda x:x[0])
+    out = "\n".join( "{}: {}".format(k,v) for k,v in out )
+    return out
+
 
 def main():
 
@@ -398,7 +419,6 @@ def main():
         print "Done!"
         return
 
-
     if args.simulate:
         print "Simulation mode ON"
     else:
@@ -423,6 +443,7 @@ def main():
     count = 0
     found = 0
     updated = 0
+    up_to_date = 0
     skipped = 0
     photo = 0
     
@@ -437,8 +458,8 @@ def main():
     if args.filter:
         print "Filtering on '{}'".format("', '".join(args.filter))
 
-    for query in parse( args.file ):
-        uid = query['eleve']['uid']
+    for xml, obj in parse( args.file ):
+        uid = unicode(obj['eleve']['uid'])
         if args.filter and uid.lower() not in args.filter:
             skipped += 1
             continue
@@ -451,18 +472,25 @@ def main():
 
         if args.verbose:
             print "Parsing ", uid
+            if args.filter:
+                print "*"*40, "DUMP"
+                print etree.tostring(xml, pretty_print=True)
+                cp = copy.deepcopy(obj)
+                cp['photo'] = 'erased by me'
+                print json.dumps( cp, indent=2 )
+
         
         count += 1
         
-        ins = query['inscription']
+        ins = obj['inscription']
         if not ins:
             print "Pas d'inscription pour {}".format( uid )
             continue
 
-        image = query['donneesComplementaires']['photo']
+        image = obj['photo']
         if args.verbose:
             print "Len of image is ", (len(image) if image else 'NA')
-            print "Numero de demande:", query.get('numeroDemande','NA')
+            print "Numero de demande:", obj.get('numeroDemande','NA')
 
         resultset = tuple( fm.do_find({'uid':uid},max=3) )
 
@@ -475,6 +503,7 @@ def main():
 
         found += 1
         res = resultset[0]
+        original = copy.deepcopy(res)
 
         if res['sectionSaisie'] and not args.overwrite:
             skipped += 1
@@ -493,32 +522,24 @@ def main():
     
         try:
             ecole = ins['formation']
-            voie = query['previsionVoie']
-            affectation = query['affectation']
-            comp = query['donneesComplementaires']
+            affectation = obj['affectation']
             zone = affectation.get( 'zoneAffectationAuto',None)
 
             if image:
                 _setattr( res, 'flagPhotoAUploader', '1' )
                 photo += 1
             
-            _setattr( res, 'etabPreavis', etab_preavis( query ) )
-            _setattr( res, 'etabRemarque', query['preavis']['remarquesComplementaires'] )
+            _setattr( res, 'etabPreavis', etab_preavis( obj ) )
+            _setattr( res, 'etabRemarque', obj['preavis']['remarquesComplementaires'] )
             _setattr( res, 'eleveAutreFormation', eleve_autre_formation(ins) )
             _setattr( res, 'zoneRecrutement',zone)
             _setattr( res, 'autreZoneAffectation',
-                      affectation.get( 'zoneAffectationSouhaitee',None) )
-            _setattr( res, 'motivationAutreZoneAffectation',
-                      affectation.get( 'motivation',None) )
+                      affectation['zoneAffectationSouhaitee'] )
 
-            _setattr( res, 'numeroDemande', query.get('numeroDemande','') )
+            _setattr( res, 'motivationAutreZoneAffectation', affectation['motivation'] )
 
-            # _setattr( res, 'mereEtatCivil', comp.get('etatCivilMere',None) )
-            # _setattr( res, 'pereEtatCivil', comp.get('etatCivilPere',None) )
-            # _setattr( res, 'mereProfession', comp.get('professionMere',None) )
-            # _setattr( res, 'pereProfession', comp.get('professionPere',None) )
-            # _setattr( res, 'eleveAssurance', comp.get('assurance',None) )
-    
+            _setattr( res, 'numeroDemande', obj['numeroDemande'] )
+
             EM = bool( ecole == 'Ecole de maturité' )
             ECG = bool( ecole == 'Ecole de culture générale' )
             EC = bool( ecole == 'Ecole de commerce' )
@@ -535,8 +556,6 @@ def main():
                 _setattr( res, 'eleveOptionL3', eleve_langue3_matu(ins) )
                 _setattr( res, 'eleveOptionMa', eleve_math(ins) )
 
-                _setattr( res, 'etabMoyenneInscription', voie.get('vpTotal1',None) )
-                _setattr( res, 'etabMoyenneInscriptionFMA', voie.get('vpTotal2',None) )
             if EC:
                 _setattr( res, 'sectionSaisie', 'E' )
             if ECG:
@@ -544,14 +563,20 @@ def main():
             
             if EC or ECG:
                 _setattr( res, 'eleveOptionL2', eleve_langue2(ins) )
-                _setattr( res, 'etabMoyenneInscription', voie.get('vgCours2',None) )
-                _setattr( res, 'etabMoyenneInscriptionFMA', voie.get('vgSem1',None) )
 
             if EC or ECG or EM:
-                _setattr( res, 'elevePrevision', voie.get('pronostic',None) )
+                _setattr( res, 'elevePrevision', obj['pronostic'] )
                 _setattr( res, 'eleveOptionOa', eleve_art(ins) )
                 _setattr( res, 'eleveClasseSpeciale', eleve_speciale(ins) )
 
+            if obj['eleve']['resultats']:
+                tmp = obj['eleve']['resultats']
+                _setattr( res, 'groupe1NbPts', tmp['Groupe 1']['points'] )
+                _setattr( res, 'groupe1NbDisc', tmp['Groupe 1']['nbDisciplines'] )
+                _setattr( res, 'groupe2NbPts', tmp['Groupe 2']['points'] )
+                _setattr( res, 'groupe2NbDisc', tmp['Groupe 2']['nbDisciplines'] )
+
+            _setattr( res, 'niveauxDisciplines', eleve_niveaux(obj['eleve']['niveaux']) )
             res.dateInscription = now
 
         except KeyError as e:
@@ -559,8 +584,29 @@ def main():
             #print "*"*40
             #print json.dumps( query, indent=2 )
             print "*"*40
+            print e
             # raise
             continue
+
+        has_changed = False
+        for key in res.changed_keys():
+            if key == 'flagPhotoAUploader':
+                continue
+            if original[key] != res[key]:
+                has_changed = True
+                break
+        if not has_changed:
+            up_to_date += 1
+            continue
+
+        if args.verbose:
+            for key in res.changed_keys():
+                print "{: <40}: {} -> {} / {}".format(
+                    key,
+                    original[key],
+                    res[key],
+                    "YES" if original[key] == res[key] else "NO",
+                )
 
         res.flagInscriptionOK = 1
         res.flagEInscription = 1
@@ -575,6 +621,7 @@ def main():
     print "Total number of uid found in Norma: {}".format( found )
     print "Total number of record skipped in Norma: {}".format( skipped )
     print "Total number of record edited in Norma: {}".format( updated )
+    print "Total number of record up to date in Norma: {}".format( up_to_date )
         
 if __name__ == '__main__':
     main()
