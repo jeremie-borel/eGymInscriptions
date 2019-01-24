@@ -161,6 +161,7 @@ def get_status( data ):
         '91':u'OK',
         '1':u'ERREUR',
         '2':u'ERREUR',
+        '92': u'ERREUR',
     }
     try:
         return _map[data]
