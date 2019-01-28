@@ -53,8 +53,8 @@ _pat = re.compile(
     (?P<status>\d.*)$
     """, re.VERBOSE|re.DOTALL )
 
-def read_email():
-    print "Downloading emails..."
+def read_email( past=None ):
+    print "Downloading emails...",
     mail_data = {}
     try:
         mail = imaplib.IMAP4_SSL( host=POSTFINANCE_SERVER, port=993 )
@@ -64,7 +64,14 @@ def read_email():
         matched = 0
         unmatched = 0
 
-        rv, data = mail.search(None, 'ALL')
+        if past is None:
+            print "all"
+            rv, data = mail.search(None, 'ALL')
+        else:
+            dd = datetime.datetime.now() - datetime.timedelta( days=int(past) )
+            arg = '(SENTSINCE {})'.format(dd.strftime( '%d-%b-%Y'))
+            print arg
+            rv, data = mail.search(None, arg )
         if rv != 'OK':
             print "No message found!"
             return
@@ -139,7 +146,7 @@ def read_email():
         mail.close()
         mail.logout()
 
-        print "Mails matched: {}, unmatched: {}, matched and not test:{}".format(
+        print "Mails parsed: {}, parse failed: {}, total:{}".format(
             matched,
             unmatched,
             len(mail_data),
@@ -184,9 +191,9 @@ def download_paiements():
     return ret
 
 
-def main():
+def main( options ):
     
-    mail_data = read_email()
+    mail_data = read_email( past=options.days )
     if not mail_data:
         return
 
@@ -259,10 +266,15 @@ if __name__ == '__main__':
                             default=False, required=False,
                             help='Tests de lecture sur Inscription.' )
 
+    parser.add_argument('-d', dest="days", action="store",
+                            default=False, required=False,
+                            help='Number of days in the paste to download the mails.' )
+
+
     args = parser.parse_args()
 
     if args.test:
-        print "tagada"
+        print "no test to run"
         # fm.setLayout( 'StdInscription' )
         # # fm.doView()
         # print "oualalal"
@@ -275,4 +287,5 @@ if __name__ == '__main__':
         # print r
         sys.exit(0)
 
-    main()
+    if not args.test:
+        main( options=args )
