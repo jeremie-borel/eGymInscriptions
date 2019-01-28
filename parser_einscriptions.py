@@ -373,6 +373,9 @@ def eleve_niveaux( item ):
     out = "\n".join( "{}: {}".format(k,v) for k,v in out )
     return out
 
+def parse_date( stamp ):
+    d = datetime.datetime.strptime( stamp, '%d.%m.%Y' )
+    return d.date()
 
 def main():
 
@@ -577,8 +580,7 @@ def main():
                 _setattr( res, 'groupe2NbDisc', tmp['Groupe 2']['nbDisciplines'] )
 
             _setattr( res, 'niveauxDisciplines', eleve_niveaux(obj['eleve']['niveaux']) )
-            res.dateInscription = now
-
+            _setattr( res, 'dateInscription', parse_date( ins['dateInscription'] ) )
         except KeyError as e:
             print "Could not process {}".format( uid )
             #print "*"*40
