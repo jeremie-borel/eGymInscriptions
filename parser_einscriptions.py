@@ -375,7 +375,7 @@ def eleve_niveaux( item ):
 
 def parse_date( stamp ):
     d = datetime.datetime.strptime( stamp, '%d.%m.%Y' )
-    return d.date()
+    return d
 
 def main():
 
