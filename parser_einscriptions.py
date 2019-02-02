@@ -129,6 +129,7 @@ def build_object( elem ):
             'hasBilingueItalien': _get( ins, 'hasBilingueItalien' ),
             'hasClasseSpeciale': _get( ins, 'hasClasseSpeciale' ),
             'dateInscription': _get( ins, 'dateInscription' ),
+            'choixDeuxiemeAnnee': _get( ins, 'choixDeuxiemeAnnee', default=None ),
         },
         'affectation': {
             'zoneAffectationAuto': _get( xml.affectation, 'zoneAffectationAuto', default=None ),
@@ -374,6 +375,17 @@ def eleve_niveaux( item ):
     out = "\n".join( "{}: {}".format(k,v) for k,v in out )
     return out
 
+def eleve_choix_od_future( item ):
+    _map = {
+        'Santé' : 'santé',
+        'Socio-éducative': 'socio-éducative',
+        'Socio-pédagogique': 'socio-pédagogique',
+        'Communication et Information': 'communication et information',
+        'Artistique': 'artistique',
+        None: '',
+    }
+    return _map[ item['choixDeuxiemeAnnee'] ]
+
 def parse_date( stamp ):
     d = datetime.datetime.strptime( stamp, '%d.%m.%Y' )
     return d
@@ -483,7 +495,6 @@ def main():
                 cp['photo'] = 'erased by me'
                 print json.dumps( cp, indent=2 )
 
-        
         count += 1
         
         ins = obj['inscription']
@@ -564,6 +575,7 @@ def main():
                 _setattr( res, 'sectionSaisie', 'E' )
             if ECG:
                 _setattr( res, 'sectionSaisie', 'D' )
+                _setattr( res, 'choixODFuture', eleve_choix_od_future(ins) )
             
             if EC or ECG:
                 _setattr( res, 'eleveOptionL2', eleve_langue2(ins) )
