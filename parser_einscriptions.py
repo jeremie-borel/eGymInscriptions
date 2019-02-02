@@ -299,6 +299,7 @@ def eleve_os( item ):
         'Musique': 'musique',
         'Philosophie et Psychologie': 'philosophie et psychologie',
         'Physique et Application des Mathématiques': 'physique et applications des mathématiques',
+        'Aucune': 'Aucune',
         }
     return _map[ item['optionSpecifique'] ]
 
